@@ -172,6 +172,17 @@
  
     <div class="row field">
       <div>
+        <label for="projStart">วันที่เริ่มโครงการ</label>
+        <input type="date" id="projStart" />
+      </div>
+      <div>
+        <label for="projEnd">วันที่สิ้นสุดโครงการ</label>
+        <input type="date" id="projEnd" />
+      </div>
+    </div>
+ 
+    <div class="row field">
+      <div>
         <label for="departAt">วันเวลาเดินทางไป</label>
         <input type="datetime-local" id="departAt" />
       </div>
@@ -232,6 +243,9 @@
     หลักการคำนวณ: นับเวลาตั้งแต่ออกเดินทางจนกลับถึง ทุก 24 ชั่วโมงนับเป็น 1 วัน เศษเวลาที่เกิน 12 ชั่วโมงนับเป็น 1 วันเพิ่ม
     เศษที่ไม่เกิน 12 ชั่วโมงไม่นับเพิ่ม เบี้ยเลี้ยงคิดเหมาจ่ายตามอัตราที่เลือก และหักค่าอาหารมื้อละ 1/3 ของอัตราต่อวัน
     หากหน่วยงานมีการจัดเลี้ยงให้ในระหว่างการเดินทาง<br/>
+    หากระบุ "วันที่เริ่ม-สิ้นสุดโครงการ" ระบบจะใช้ช่วงเวลาดังกล่าว (นับตั้งแต่ 00:00 น. ของวันเริ่ม ถึง 23:59 น. ของวันสิ้นสุด) เป็นกรอบหลักในการคิดจำนวนวันเบี้ยเลี้ยง
+    หากเดินทางไปก่อนหรือกลับหลังกรอบเวลาโครงการ ส่วนที่เกินจะไม่ถูกนำมาคิดเบี้ยเลี้ยง
+    (ส่วนช่อง "เวลาเดินทางรวม" ยังคงแสดงตามวันเวลาเดินทางไป-กลับจริงเสมอ ไม่ถูกตัดกรอบ)<br/>
     โปรแกรมนี้จัดทำขึ้นเพื่อความสะดวกในการประมาณการเบื้องต้น ควรตรวจสอบกับระเบียบและอัตราที่ใช้บังคับล่าสุดของหน่วยงานต้นสังกัดก่อนเบิกจ่ายจริง
   </p>
 </div>
@@ -241,6 +255,8 @@
   const posSelect = document.getElementById('posSelect');
   const customRow = document.getElementById('customRateRow');
   const customRate = document.getElementById('customRate');
+  const projStart = document.getElementById('projStart');
+  const projEnd = document.getElementById('projEnd');
   const departAt = document.getElementById('departAt');
   const returnAt = document.getElementById('returnAt');
   const mealBreakfast = document.getElementById('mealBreakfast');
@@ -258,12 +274,17 @@
   function toLocalInputValue(d){
     return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
   }
+  function toDateInputValue(d){
+    return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  }
  
   const now = new Date();
   const defaultDepart = new Date(now); defaultDepart.setHours(8,0,0,0);
   const defaultReturn = new Date(defaultDepart); defaultReturn.setDate(defaultReturn.getDate()+1); defaultReturn.setHours(17,0,0,0);
   departAt.value = toLocalInputValue(defaultDepart);
   returnAt.value = toLocalInputValue(defaultReturn);
+  projStart.value = toDateInputValue(defaultDepart);
+  projEnd.value = toDateInputValue(defaultReturn);
  
   function currentRate(){
     if (posSelect.value === 'custom') return parseFloat(customRate.value) || 0;
@@ -292,17 +313,37 @@
     }
     errorMsg.style.display = 'none';
  
+    // เวลาเดินทางรวม (แสดงผลตามจริง ไม่ตัดกรอบโครงการ)
     const diffMs = d2 - d1;
     const totalHours = diffMs / 3600000;
-    const fullDays = Math.floor(totalHours/24);
-    const remainderHours = totalHours - fullDays*24;
+    const dispFullDays = Math.floor(totalHours/24);
+    const dispRemainderHours = totalHours - dispFullDays*24;
+    const dispRemH = Math.floor(dispRemainderHours);
+    const dispRemM = Math.round((dispRemainderHours - dispRemH) * 60);
+    outDuration.textContent = dispFullDays + ' วัน ' + dispRemH + ' ชม. ' + dispRemM + ' นาที';
+ 
+    // ตัดกรอบเวลาให้อยู่ในช่วงวันเวลาโครงการ (ถ้ามีการระบุ) สำหรับใช้คิดเบี้ยเลี้ยงเท่านั้น
+    let calcStart = d1;
+    let calcEnd = d2;
+    const pStart = projStart.value ? new Date(projStart.value + 'T00:00:00') : null;
+    const pEnd = projEnd.value ? new Date(projEnd.value + 'T23:59:59') : null;
+    if (pStart && !isNaN(pStart) && calcStart < pStart) calcStart = pStart;
+    if (pEnd && !isNaN(pEnd) && calcEnd > pEnd) calcEnd = pEnd;
+ 
+    if (calcEnd <= calcStart){
+      outDays.textContent = '0 วัน';
+      outGross.textContent = fmtBaht(0);
+      outMealDeduct.textContent = fmtBaht(0);
+      outNet.textContent = fmtBaht(0);
+      return;
+    }
+ 
+    const calcHours = (calcEnd - calcStart) / 3600000;
+    const fullDays = Math.floor(calcHours/24);
+    const remainderHours = calcHours - fullDays*24;
     let days = fullDays;
     if (remainderHours > 12){ days += 1; }
  
-    const remH = Math.floor(remainderHours);
-    const remM = Math.round((remainderHours - remH) * 60);
- 
-    outDuration.textContent = fullDays + ' วัน ' + remH + ' ชม. ' + remM + ' นาที';
     outDays.textContent = (days % 1 === 0 ? days : days.toFixed(1)) + ' วัน';
  
     const rate = currentRate();
@@ -318,7 +359,7 @@
     outNet.textContent = fmtBaht(net);
   }
  
-  [posSelect, customRate, departAt, returnAt, mealBreakfast, mealLunch, mealDinner].forEach(function(el){
+  [posSelect, customRate, projStart, projEnd, departAt, returnAt, mealBreakfast, mealLunch, mealDinner].forEach(function(el){
     el.addEventListener('input', calc);
     el.addEventListener('change', calc);
   });
