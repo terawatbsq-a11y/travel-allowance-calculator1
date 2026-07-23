@@ -225,43 +225,29 @@
   <!-- วันเดินทาง -->
   <div class="card">
     <div class="section-label">วันเวลาเดินทาง</div>
-    <div class="field two-col">
-      <div>
-        <label>วันเดินทางไป</label>
-        <div class="pill-row">
-          <input class="pill pill-date" type="date" id="departDate" />
+    <div class="field">
+      <label>วันเวลาเดินทางไป</label>
+      <div class="pill-row">
+        <input class="pill pill-date" type="date" id="departDate" />
+        <div class="select-wrap">
+          <select class="pill pill-hour" id="departHour"></select>
         </div>
-      </div>
-      <div>
-        <label>วันเดินทางกลับ</label>
-        <div class="pill-row">
-          <input class="pill pill-date" type="date" id="returnDate" />
+        <span class="colon">:</span>
+        <div class="select-wrap">
+          <select class="pill pill-min" id="departMin"></select>
         </div>
       </div>
     </div>
-    <div class="field two-col">
-      <div>
-        <label>เวลาเดินทางไป</label>
-        <div class="pill-row">
-          <div class="select-wrap">
-            <select class="pill pill-hour" id="departHour"></select>
-          </div>
-          <span class="colon">:</span>
-          <div class="select-wrap">
-            <select class="pill pill-min" id="departMin"></select>
-          </div>
+    <div class="field">
+      <label>วันเวลาเดินทางกลับ</label>
+      <div class="pill-row">
+        <input class="pill pill-date" type="date" id="returnDate" />
+        <div class="select-wrap">
+          <select class="pill pill-hour" id="returnHour"></select>
         </div>
-      </div>
-      <div>
-        <label>เวลาเดินทางกลับ</label>
-        <div class="pill-row">
-          <div class="select-wrap">
-            <select class="pill pill-hour" id="returnHour"></select>
-          </div>
-          <span class="colon">:</span>
-          <div class="select-wrap">
-            <select class="pill pill-min" id="returnMin"></select>
-          </div>
+        <span class="colon">:</span>
+        <div class="select-wrap">
+          <select class="pill pill-min" id="returnMin"></select>
         </div>
       </div>
     </div>
@@ -365,9 +351,9 @@
   document.getElementById('projEnd').value      = tomorrowStr();
   document.getElementById('departDate').value   = todayStr();
   document.getElementById('returnDate').value   = tomorrowStr();
-  document.getElementById('departHour').value   = 8;
+  document.getElementById('departHour').value   = 0;
   document.getElementById('departMin').value    = 0;
-  document.getElementById('returnHour').value   = 17;
+  document.getElementById('returnHour').value   = 0;
   document.getElementById('returnMin').value    = 0;
 
   // --- refs ---
